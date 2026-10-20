@@ -1,0 +1,24 @@
+name: Validate PowerShell syntax
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  parse:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        shell: [powershell, pwsh]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse installer
+        shell: ${{ matrix.shell }}
+        run: |
+          $tokens = $null
+          $errors = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile(
+            (Join-Path $PWD 'Fix-ChaosTheory.ps1'), [ref]$tokens, [ref]$errors)
+          if ($errors.Count) {
+            $errors | ForEach-Object { Write-Error $_ }
+            exit 1
+          }
+          Write-Host 'PowerShell syntax valid.'
